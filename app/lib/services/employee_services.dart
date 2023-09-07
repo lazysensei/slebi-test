@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:developer';
 import 'package:app/models/employee_model/employee_model.dart';
 import 'package:app/models/failure/failure.dart';
@@ -10,12 +9,18 @@ import 'dart:convert';
 
 class EmployeeServices {
   Future<Either<Failure, List<EmployeeModel>>> getAllEmployees() async {
+    bool checked = await InternetConnectionChecker.checkInternetConnectivity();
+
+    if (!checked) {
+      return Left(Failure(
+          "Connection can't be reached kindly check your internet connection",
+          200));
+    }
+
     try {
-      http.Response response = await http
-          .get(
-            Uri.parse("https://jsonplaceholder.typicode.com/users"),
-          )
-          .timeout(const Duration(seconds: 90));
+      http.Response response = await http.get(
+        Uri.parse("https://jsonplaceholder.typicode.com/users"),
+      );
       if (response.statusCode != 200) {
         var json = jsonDecode(response.body);
         return Left(
@@ -31,9 +36,6 @@ class EmployeeServices {
         employees.add(EmployeeModel.fromJson(element));
       }
       return Right(employees);
-    } on TimeoutException catch (e) {
-      final connectiontimeout = Failure("Connection timeout", 200);
-      return Left(connectiontimeout);
     } catch (e) {
       return Left(Failure(e.toString(), 200));
     }
